@@ -11,7 +11,7 @@ import (
 type SpaHandle struct {
 	pinner runtime.Pinner
 
-	pw     *Pipewire
+	api    *InitializationAPI
 	handle *low.CSpaHandle
 
 	version      uint32
@@ -19,10 +19,10 @@ type SpaHandle struct {
 	clear        func(*low.CSpaHandle) int
 }
 
-func NewSpaHandle(pw *Pipewire, h *low.CSpaHandle) *SpaHandle {
+func NewSpaHandle(api *InitializationAPI, h *low.CSpaHandle) *SpaHandle {
 	var s SpaHandle
 
-	s.pw = pw
+	s.api = api
 	s.handle = h
 	s.pinner.Pin(h)
 	s.version = h.Version
@@ -48,5 +48,5 @@ func (s *SpaHandle) Clear() int {
 func (s *SpaHandle) Unload() int {
 	defer s.pinner.Unpin()
 
-	return s.pw.pw_unload_spa_handle(s.handle)
+	return s.api.pw_unload_spa_handle(s.handle)
 }

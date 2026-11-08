@@ -16,6 +16,8 @@ func main() {
 		panic(err)
 	}
 
+	pp.Println("version:", pw.GetLibraryVersion())
+
 	pp.Println("init:", pw.Init(os.Args))
 	pp.Println("application name:", pw.GetApplicationName())
 	pp.Println("program name:", pw.GetPrgName())
@@ -23,7 +25,7 @@ func main() {
 	pp.Println("host name:", pw.GetHostName())
 	pp.Println("client name:", pw.GetClientName())
 
-	pp.Printf(
+	fmt.Printf(
 		"\npw.DirectionReverse(SpaDirectionInput) = %s\n\n",
 		pw.DirectionReverse(pipewire.SpaDirectionInput),
 	)
