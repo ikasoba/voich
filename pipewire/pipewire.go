@@ -2,7 +2,6 @@ package pipewire
 
 import (
 	"errors"
-	"fmt"
 	"runtime"
 	"slices"
 
@@ -18,29 +17,10 @@ var PipewireLibraryNames = []string{
 	"libpipewire-0.3.so.0",
 }
 
-// reference spa/include/spa/utils/defs.h
-type SpaDirection int
-
-func (d SpaDirection) String() string {
-	switch d {
-	case SpaDirectionInput:
-		return "(SpaDirectionInput 0)"
-
-	case SpaDirectionOutput:
-		return "(SpaDirectionOutput 1)"
-
-	default:
-		return fmt.Sprintf("(SpaDirection!UNK %d)", int(d))
-	}
-}
-
-const (
-	SpaDirectionInput  SpaDirection = 0
-	SpaDirectionOutput              = 1
-)
-
 type Pipewire struct {
 	libptr uintptr
+
+	// Initialization
 
 	pw_init                      func(*int, **unsafe.Pointer)
 	pw_deinit                    func()
@@ -57,106 +37,6 @@ type Pipewire struct {
 	pw_get_support               func(*low.CSpaSupport, uint32) uint32
 	pw_load_spa_handle           func(string, string, *low.CSpaDict, uint32, *low.CSpaSupport) *low.CSpaHandle
 	pw_unload_spa_handle         func(*low.CSpaHandle) int
-}
-
-type SpaTypeName string
-
-const (
-	SpaTypeInfoBase SpaTypeName = "Spa:"
-)
-
-type SpaSupportDescriptor interface {
-	Type() SpaTypeName
-}
-
-type SpaSupport struct {
-	TypeName SpaTypeName
-	Data     uintptr
-}
-
-func (s *SpaSupport) MakeCSpaSupport(pinner *runtime.Pinner) low.CSpaSupport {
-	return low.CSpaSupport{
-		TypeName: utils.NewCString(pinner, string(s.TypeName)),
-		Data:     s.Data,
-	}
-}
-
-type SpaDict struct {
-	Flags uint32
-	Items map[string]string
-}
-
-func (s *SpaDict) MakeCSpaDict(pinner *runtime.Pinner) low.CSpaDict {
-	n := len(s.Items)
-	info := low.CSpaDict{
-		Flags:  s.Flags,
-		NItems: uint32(n),
-		Items:  nil,
-	}
-
-	items := make([]low.CSpaDictItem, n)
-
-	i := 0
-	for k, v := range s.Items {
-		if i >= n {
-			break
-		}
-
-		item := low.CSpaDictItem{
-			Key:   utils.NewCString(pinner, k),
-			Value: utils.NewCString(pinner, v),
-		}
-
-		items[i] = item
-	}
-
-	info.Items = unsafe.SliceData(items)
-	pinner.Pin(items)
-
-	return info
-}
-
-type SpaHandle struct {
-	pinner runtime.Pinner
-
-	pw     *Pipewire
-	handle *low.CSpaHandle
-
-	version      uint32
-	getInterface func(*low.CSpaHandle, string, *unsafe.Pointer) int
-	clear        func(*low.CSpaHandle) int
-}
-
-func NewSpaHandle(pw *Pipewire, h *low.CSpaHandle) *SpaHandle {
-	var s SpaHandle
-
-	s.pw = pw
-	s.handle = h
-	s.pinner.Pin(h)
-	s.version = h.Version
-
-	purego.RegisterFunc(&s.getInterface, h.GetInterface)
-	purego.RegisterFunc(&s.clear, h.Clear)
-
-	return &s
-}
-
-func (s *SpaHandle) Version() uint32 {
-	return s.version
-}
-
-func (s *SpaHandle) GetInterface(typeName SpaTypeName, dst *unsafe.Pointer) int {
-	return s.getInterface(s.handle, string(typeName), dst)
-}
-
-func (s *SpaHandle) Clear() int {
-	return s.clear(s.handle)
-}
-
-func (s *SpaHandle) Unload() int {
-	defer s.pinner.Unpin()
-
-	return s.pw.pw_unload_spa_handle(s.handle)
 }
 
 func loadLibptr() (uintptr, error) {
