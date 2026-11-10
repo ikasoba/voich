@@ -23,3 +23,30 @@ type CSpaLoop struct {
 type CSpaLoopControl struct {
 	Interface CSpaInterface
 }
+
+type CSpaSourceFunc uintptr
+type CSpaInvokeFunc uintptr
+
+type CSpaSource struct {
+	Loop  *CSpaLoop
+	Func  CSpaSourceFunc
+	Data  uintptr
+	Fd    int
+	Mask  uint32
+	RMask uint32
+	Priv  uintptr
+}
+
+type CSpaLoopControlHooks struct {
+	Version uint32
+	Before  uintptr
+	After   uintptr
+}
+
+type Timespec struct{}
+
+type SpaSourceIoFunc uintptr
+type SpaSourceIdleFunc uintptr
+type SpaSourceEventFunc uintptr
+type SpaSourceTimerFunc uintptr
+type SpaSourceSignalFunc uintptr
