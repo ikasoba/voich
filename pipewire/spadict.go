@@ -35,6 +35,7 @@ func (s *SpaDict) MakeCSpaDict(pinner *runtime.Pinner) low.CSpaDict {
 		}
 
 		items[i] = item
+		i++
 	}
 
 	info.Items = unsafe.SliceData(items)
